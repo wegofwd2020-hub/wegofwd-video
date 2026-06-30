@@ -50,7 +50,7 @@ from wegofwd_video.registry import (
     validate_selection,
 )
 
-__version__ = "0.1.2"
+__version__ = "1.0.0"
 
 __all__ = [
     "ROLE_DEFAULTS",

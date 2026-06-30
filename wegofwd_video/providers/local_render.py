@@ -44,7 +44,5 @@ class CallableRenderProvider(VideoProvider):
     def generate(self, req: VideoRequest) -> VideoResult:
         result = self._render_fn(req)
         if not isinstance(result, VideoResult):
-            raise VideoResponseError(
-                "render_fn must return a wegofwd_video.VideoResult"
-            )
+            raise VideoResponseError("render_fn must return a wegofwd_video.VideoResult")
         return result

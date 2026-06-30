@@ -82,12 +82,13 @@ tests/                # the conformance gate — travels with the code
 
 ## Status
 
-`v0.1.2`, **interface unstable** (v0.x). Per ADR-026 D7 this package was created
-ahead of the family's usual extract-on-second-consumer rule; the first two real
-integrations (Pramana + kathai) **met the v1.0 gate**. The Veo live call is now
-wired (submit→poll→download); `model_verified` for `veo` flips to a live-tested
-basis after the first successful real generation. Cut **v1.0** once the consumer
-PRs merge and one live Veo run is confirmed.
+`v1.0.0` — **interface frozen** (additive-by-default; breaking changes bump major
++ `VIDEO_CONTRACT_VERSION`). The ADR-026 D7 gate is met: both real consumers are
+merged on two provider paths — pramana (`veo`) and kathai-chithiram
+(`deterministic-renderer`). The Veo live call is wired (submit→poll→download); a
+first real generation is still pending, so `veo` `model_verified` stays
+docs-verified until then — a provider-integration detail that does **not** affect
+the frozen contract (ADR-026).
 
 ## Dev
 

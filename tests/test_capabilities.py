@@ -30,5 +30,9 @@ def test_veo_rejects_unsupported_resolution():
 def test_deterministic_renderer_takes_no_ingredients():
     with pytest.raises(VideoCapabilityError):
         assert_brief_within_capabilities(
-            "deterministic-renderer", resolution="1080p", aspect="16:9", duration_s=10, ingredients=1
+            "deterministic-renderer",
+            resolution="1080p",
+            aspect="16:9",
+            duration_s=10,
+            ingredients=1,
         )

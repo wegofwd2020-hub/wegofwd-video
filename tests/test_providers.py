@@ -8,7 +8,7 @@ from wegofwd_video import (
     VideoResult,
     build_provider,
 )
-from wegofwd_video.errors import VideoAuthError, VideoConfigurationError
+from wegofwd_video.errors import VideoAuthError, VideoConfigurationError, VideoResponseError
 from wegofwd_video.providers.veo import VeoProvider, render_brief_text
 
 
@@ -17,10 +17,18 @@ def _brief():
         global_style="warm storybook",
         global_negative="no flashing",
         audio_direction="gentle narrator",
-        ingredients=(Ingredient(role="character:child", ref="child.png", description="child ~6yo"),),
+        ingredients=(
+            Ingredient(role="character:child", ref="child.png", description="child ~6yo"),
+        ),
         shots=(
-            Shot(scene_index=1, prompt="child walks to the sink", shot_type="medium",
-                 camera_move="static", dialogue="CHILD walks to the sink.", duration_s=4),
+            Shot(
+                scene_index=1,
+                prompt="child walks to the sink",
+                shot_type="medium",
+                camera_move="static",
+                dialogue="CHILD walks to the sink.",
+                duration_s=4,
+            ),
         ),
     )
 
@@ -31,8 +39,13 @@ def test_deterministic_renderer_uses_caller_render_fn():
 
     def fake_render(req: VideoRequest) -> VideoResult:
         calls["seen"] = req
-        return VideoResult(provider_id="deterministic-renderer", model="blender-grease-pencil-v2",
-                           asset_uri="media/out.mp4", duration_s=4, resolution="1080p")
+        return VideoResult(
+            provider_id="deterministic-renderer",
+            model="blender-grease-pencil-v2",
+            asset_uri="media/out.mp4",
+            duration_s=4,
+            resolution="1080p",
+        )
 
     p = build_provider("deterministic-renderer", render_fn=fake_render)
     assert p.provider_id == "deterministic-renderer"
@@ -49,7 +62,7 @@ def test_deterministic_renderer_requires_render_fn():
 
 def test_deterministic_renderer_rejects_bad_return():
     p = build_provider("deterministic-renderer", render_fn=lambda req: "not-a-result")
-    with pytest.raises(Exception):
+    with pytest.raises(VideoResponseError):
         p.generate(VideoRequest(brief=_brief()))
 
 
@@ -185,7 +198,10 @@ def test_render_brief_text_includes_global_block_and_shots():
     assert text.splitlines()[0] == "STYLE: warm storybook"
     assert "AUDIO: gentle narrator" in text
     assert 'INGREDIENT[character:child] ref=child.png "child ~6yo"' in text
-    assert '[1] child walks to the sink | medium | static | DIALOGUE: "CHILD walks to the sink." | dur=4' in text
+    assert (
+        '[1] child walks to the sink | medium | static | DIALOGUE: "CHILD walks to the sink." | dur=4'
+        in text
+    )
 
 
 def test_no_key_in_repr():

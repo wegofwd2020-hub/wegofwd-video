@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wegofwd-video"
-version = "0.1.2"
+version = "1.0.0"
 description = "Shared video-generation seam (provider-agnostic brief/request/result, registry, provenance) for the wegofwd product family. See ADR-026."
 readme = "README.md"
 # 3.10 floor: kathai-chithiram (a 3.10 consumer) drives the deterministic-renderer

@@ -47,7 +47,7 @@ def render_brief_text(brief: VideoBrief) -> str:
     if brief.global_negative:
         lines.append(f"NEGATIVE: {brief.global_negative}")
     for ing in brief.ingredients:
-        lines.append(f"INGREDIENT[{ing.role}] ref={ing.ref} \"{ing.description}\"")
+        lines.append(f'INGREDIENT[{ing.role}] ref={ing.ref} "{ing.description}"')
     for shot in brief.shots:
         parts = [f"[{shot.scene_index}] {shot.prompt}"]
         for val in (shot.shot_type, shot.camera_move, shot.lighting):
@@ -141,7 +141,7 @@ class VeoProvider(VideoProvider):
             data = self._download_bytes(client, video)
         except VideoError:
             raise
-        except Exception as exc:  # noqa: BLE001 - classified + re-raised key-free
+        except Exception as exc:  # classified + re-raised key-free
             raise self._map_error(exc) from None
 
         return VideoResult(

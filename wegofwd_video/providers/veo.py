@@ -2,18 +2,23 @@
 wegofwd_video/providers/veo.py
 
 Google Veo provider (Veo 3.1). BYOK: the caller passes the key; this module never
-sources or logs it. Reach via Vertex AI / Google Flow, NOT the consumer Gemini app
-(that is the fast/720p tier — see registry).
+sources or logs it. Reach via the Gemini Developer API (api_key) — Vertex AI (ADC)
+is a future option. NOT the consumer Gemini app (that is the fast/720p tier).
 
-STATUS: request-shaping (brief -> vendor payload) is implemented and tested;
-the live network call is a documented stub (`generate` raises NotImplementedError)
-pending the first real integration. Per ADR-026 D7 the first two real integrations
-gate v1.0, and per the open questions `model_verified` flips to a live-tested basis
-after the first successful generation. The google SDK is an OPTIONAL extra
-(`wegofwd-video[veo]`) imported lazily, mirroring wegofwd_llm's anthropic path.
+The generation is a long-running operation: we submit, poll until done, and
+download the asset bytes. The whole flow runs in the caller's process (ADR-026 D1).
+The `google-genai` SDK is an OPTIONAL extra (`wegofwd-video[veo]`), imported lazily
+in `_make_client`; an injected `client` (a test double or a pre-built SDK client)
+bypasses that import entirely.
+
+STATUS: the call is wired. A live run still requires a real key + the [veo] extra;
+once a first generation succeeds end-to-end, flip the registry's `model_verified`
+to a live-tested basis (ADR-026 open item).
 """
 
 from __future__ import annotations
+
+import time
 
 from wegofwd_video.contract import (
     VideoBrief,
@@ -22,7 +27,14 @@ from wegofwd_video.contract import (
     VideoRequest,
     VideoResult,
 )
-from wegofwd_video.errors import VideoConfigurationError
+from wegofwd_video.errors import (
+    VideoAuthError,
+    VideoConfigurationError,
+    VideoError,
+    VideoRateLimitError,
+    VideoResponseError,
+    VideoTimeoutError,
+)
 
 
 def render_brief_text(brief: VideoBrief) -> str:
@@ -62,6 +74,7 @@ class VeoProvider(VideoProvider):
         base_url: str = "",
         capabilities: VideoCapabilities | None = None,
         timeout: float = 600.0,
+        poll_interval_s: float = 10.0,
         client: object | None = None,
     ) -> None:
         if not api_key:
@@ -71,48 +84,124 @@ class VeoProvider(VideoProvider):
         self._model = model
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
+        self._poll_interval_s = poll_interval_s
         self.capabilities = capabilities or VideoCapabilities(
             max_duration_s=60, resolutions=("1080p",), native_audio=True, reference_images=4
         )
-        self._client = client  # injectable for tests; real client built lazily in generate()
+        self._client = client  # injectable for tests; real client built lazily
 
     @property
     def model(self) -> str:
         return self._model
 
     def build_request(self, req: VideoRequest) -> dict:
-        """Brief + per-call params -> the vendor request payload. Pure/testable."""
+        """Brief + per-call params -> the SDK `generate_videos` kwargs. Config keys
+        are the google-genai `GenerateVideosConfig` snake_case fields (the SDK
+        coerces a dict). Pure/testable."""
+        config: dict = {
+            "aspect_ratio": req.aspect_ratio,
+            "resolution": req.resolution,
+            "number_of_videos": 1,
+            "generate_audio": req.audio,
+        }
+        if req.target_duration_s:
+            config["duration_seconds"] = int(req.target_duration_s)
+        if req.brief.global_negative:
+            config["negative_prompt"] = req.brief.global_negative
+        if req.seed is not None:
+            config["seed"] = req.seed
         return {
             "model": self._model,
             "prompt": render_brief_text(req.brief),
-            "config": {
-                "resolution": req.resolution,
-                "aspectRatio": req.aspect_ratio,
-                "fps": req.fps,
-                "durationSeconds": req.target_duration_s or None,
-                "seed": req.seed,
-                "generateAudio": req.audio,
-                "referenceImages": [
-                    {"role": ing.role, "ref": ing.ref} for ing in req.brief.ingredients
-                ],
-            },
+            "config": config,
         }
 
-    def _load_sdk(self):  # pragma: no cover - exercised only with the extra installed
+    def generate(self, req: VideoRequest) -> VideoResult:
+        # Reference-image (Ingredients-to-Video) wiring is a follow-up: it needs
+        # resolved image bytes/handles, not the brief's pointer strings. Fail loudly
+        # rather than silently dropping them.
+        if req.brief.ingredients:
+            raise VideoConfigurationError(
+                "Veo reference-image (ingredients) wiring is not yet implemented; "
+                "send a brief with no ingredients"
+            )
+        request = self.build_request(req)
+        client = self._client or self._make_client()
+        try:
+            operation = client.models.generate_videos(
+                model=request["model"], prompt=request["prompt"], config=request["config"]
+            )
+            operation = self._await_operation(client, operation)
+            if getattr(operation, "error", None):
+                raise VideoResponseError("Veo generation operation failed")
+            videos = getattr(operation.response, "generated_videos", None) or []
+            if not videos:
+                raise VideoResponseError("Veo returned no video")
+            video = videos[0].video
+            data = self._download_bytes(client, video)
+        except VideoError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - classified + re-raised key-free
+            raise self._map_error(exc) from None
+
+        return VideoResult(
+            provider_id="veo",
+            model=self._model,
+            asset_bytes=data,
+            asset_uri=getattr(video, "uri", None),
+            duration_s=float(request["config"].get("duration_seconds") or req.target_duration_s),
+            resolution=req.resolution,
+            has_audio=req.audio,
+            c2pa_signed=True,  # Veo emits Google C2PA + SynthID
+            watermark="SynthID",
+            seed=req.seed,
+        )
+
+    def _await_operation(self, client, operation):
+        """Poll the long-running op until done or the timeout elapses."""
+        deadline = time.monotonic() + self._timeout
+        while not getattr(operation, "done", False):
+            if time.monotonic() > deadline:
+                raise VideoTimeoutError("Veo generation timed out")
+            if self._poll_interval_s:
+                time.sleep(self._poll_interval_s)
+            operation = client.operations.get(operation)
+        return operation
+
+    @staticmethod
+    def _download_bytes(client, video) -> bytes | None:
+        """Return the asset bytes, fetching them if the SDK left them lazy."""
+        data = getattr(video, "video_bytes", None)
+        if data:
+            return data
+        client.files.download(file=video)
+        return getattr(video, "video_bytes", None)
+
+    def _make_client(self):
         try:
             from google import genai  # type: ignore
         except ImportError:
             raise VideoConfigurationError(
                 "veo provider requires the 'veo' extra: pip install wegofwd-video[veo]"
             ) from None
-        return genai
+        return genai.Client(api_key=self._api_key)
 
-    def generate(self, req: VideoRequest) -> VideoResult:  # pragma: no cover - stub
-        payload = self.build_request(req)
-        # TODO(ADR-026 D7): wire the long-running Vertex AI Veo op (submit + poll)
-        # against the first real consumer, then flip registry model_verified to a
-        # live-tested basis. Keep the call KEY-FREE in any raised error.
-        raise NotImplementedError(
-            "VeoProvider.generate is a scaffold stub; live Veo wiring is pending the "
-            f"first real integration (built request for model {self._model!r})"
+    @staticmethod
+    def _map_error(exc: Exception) -> VideoError:
+        """Classify an SDK/transport error into the typed hierarchy, KEY-FREE.
+
+        Branches on an HTTP status code if the SDK exposes one (`code` /
+        `status_code` / `response_status`); the message is generic + the code only,
+        never the exception string (which can echo request details)."""
+        code = (
+            getattr(exc, "code", None)
+            or getattr(exc, "status_code", None)
+            or getattr(exc, "response_status", None)
         )
+        if code in (401, 403):
+            return VideoAuthError("Veo authentication failed")
+        if code == 429:
+            return VideoRateLimitError("Veo rate limited")
+        if code is not None:
+            return VideoResponseError(f"Veo returned HTTP {code}")
+        return VideoResponseError("Veo request failed")

@@ -30,7 +30,7 @@ The package:
 
 | id | model | status | notes |
 |----|-------|--------|-------|
-| `veo` | `veo-3.1` | verified (docs), **live wiring pending** | 1080p/4k, native audio, 4 ingredients. Reach via Vertex AI / Flow, not the consumer Gemini app. |
+| `veo` | `veo-3.1` | **live call wired** (docs-verified; awaiting first real run) | 1080p/4k, native audio. Submit→poll→download via google-genai. Reach via Gemini API; not the consumer app. Reference-image *ingredients* are a follow-up. |
 | `deterministic-renderer` | `blender-grease-pencil-v2` | functional | wraps a **caller-supplied** render fn — kathai's matplotlib/blender stays in kathai; no key, no vendor. |
 | `runway` | `gen-4.5` | **UNVERIFIED** | placeholder |
 | `kling` | `kling-3.0` | **UNVERIFIED** | placeholder |
@@ -82,10 +82,12 @@ tests/                # the conformance gate — travels with the code
 
 ## Status
 
-`v0.1.0`, **interface unstable** (v0.x). Per ADR-026 D7 this package was created
-ahead of the family's usual extract-on-second-consumer rule; the **first two real
-integrations (Pramana, then kathai) gate v1.0**, and `model_verified` for `veo`
-flips to a live-tested basis after the first successful generation.
+`v0.1.2`, **interface unstable** (v0.x). Per ADR-026 D7 this package was created
+ahead of the family's usual extract-on-second-consumer rule; the first two real
+integrations (Pramana + kathai) **met the v1.0 gate**. The Veo live call is now
+wired (submit→poll→download); `model_verified` for `veo` flips to a live-tested
+basis after the first successful real generation. Cut **v1.0** once the consumer
+PRs merge and one live Veo run is confirmed.
 
 ## Dev
 

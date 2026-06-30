@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wegofwd-video"
+version = "0.1.0"
+description = "Shared video-generation seam (provider-agnostic brief/request/result, registry, provenance) for the wegofwd product family. See ADR-026."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Sivakumar Mambakkam" }]
+license = { text = "Proprietary" }
+
+# Runtime deps are deliberately minimal — the core seam (contract/registry/
+# provenance/local-render) has ZERO runtime deps, so kathai's deterministic path
+# pulls nothing. The Google SDK is an OPTIONAL extra; veo.py imports it lazily and
+# raises VideoConfigurationError if the extra is absent.
+dependencies = []
+
+[project.optional-dependencies]
+veo = ["google-genai>=0.3"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["wegofwd_video"]
+
+# ── Ruff (mirrors wegofwd-llm so a file passes lint identically across the family) ──
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "C4", "UP", "S", "T20", "RUF"]
+ignore = [
+    "E501",   # handled by formatter
+    "S101",   # assert in tests
+    "RUF001", # ambiguous unicode in strings (EN DASH in docstrings)
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "T20"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["wegofwd_video"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

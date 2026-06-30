@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wegofwd2020.dev/schemas/video_brief-1.0.json",
+  "title": "VideoBrief",
+  "description": "The structured prompt a wegofwd-video provider consumes (the contract.VideoBrief dataclass, serialized). Built FROM a StoryUnit's story.scenes; see project-critique/story-video-template/veo_video_brief.template.md. global_* fields hold continuity; ingredients lock identity across shots.",
+  "type": "object",
+  "required": ["global_style", "shots"],
+  "additionalProperties": false,
+  "properties": {
+    "global_style": { "type": "string", "description": "Look/mood applied to every shot." },
+    "global_negative": { "type": "string", "description": "What to avoid in every shot." },
+    "audio_direction": { "type": "string", "description": "Global audio intent (narration/ambience)." },
+    "ingredients": {
+      "type": "array",
+      "maxItems": 4,
+      "description": "Up to 4 reference images (Veo 3.1 Ingredients-to-Video) for identity/setting consistency.",
+      "items": {
+        "type": "object",
+        "required": ["role"],
+        "additionalProperties": false,
+        "properties": {
+          "role": { "type": "string", "description": "A character id, 'setting', or 'style'." },
+          "ref": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "shots": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One shot per story scene, in scene order.",
+      "items": {
+        "type": "object",
+        "required": ["scene_index", "prompt"],
+        "additionalProperties": false,
+        "properties": {
+          "scene_index": { "type": "integer" },
+          "prompt": { "type": "string" },
+          "shot_type": { "type": "string" },
+          "camera_move": { "type": "string" },
+          "lighting": { "type": "string" },
+          "dialogue": { "type": "string" },
+          "sfx": { "type": "array", "items": { "type": "string" } },
+          "duration_s": { "type": "number" },
+          "negative": { "type": "string" }
+        }
+      }
+    }
+  }
+}

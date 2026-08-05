@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Labels-as-code for wegofwd-video.
+#
+# This file is the SOURCE OF TRUTH for repository issue/PR labels. Edit here,
+# then push to main — `.github/workflows/labels-sync.yml` reconciles GitHub to
+# match this manifest (creates, recolours, re-describes, and by default deletes
+# labels not listed below). Keep it complete: a label removed from this file
+# will be removed from the repo on the next sync.
+#
+# Format (crazy-max/ghaction-github-labeler): name / color (no leading #) /
+# description. To rename a label without losing its issue associations, add a
+# `from:` list of old names.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Project-specific ─────────────────────────────────────────────────────────
+- name: dependencies
+  color: "0366d6"
+  description: "Dependency version bumps / hygiene"
+
+# ── GitHub defaults (kept so sync does not delete them) ──────────────────────
+- name: bug
+  color: "d73a4a"
+  description: "Something isn't working"
+- name: documentation
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+- name: duplicate
+  color: "cfd3d7"
+  description: "This issue or pull request already exists"
+- name: enhancement
+  color: "a2eeef"
+  description: "New feature or request"
+- name: good first issue
+  color: "7057ff"
+  description: "Good for newcomers"
+- name: help wanted
+  color: "008672"
+  description: "Extra attention is needed"
+- name: invalid
+  color: "e4e669"
+  description: "This doesn't seem right"
+- name: question
+  color: "d876e3"
+  description: "Further information is requested"
+- name: wontfix
+  color: "ffffff"
+  description: "This will not be worked on"

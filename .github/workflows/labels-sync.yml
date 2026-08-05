@@ -1,0 +1,44 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Labels sync for wegofwd-video.
+#
+# WHAT THIS DOES: reconciles the repository's issue/PR labels to match
+# `.github/labels.yml` (the source of truth). Runs when that manifest changes
+# on main, and on manual dispatch.
+#
+# DRY-RUN: trigger manually with `dry-run = true` (Actions → Run workflow) to
+# preview the diff in the job log without mutating any labels.
+#
+# NOTE: the manifest is authoritative — a label absent from it is DELETED on
+# sync (skip-delete defaults to false). Keep labels.yml complete.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Labels sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/labels.yml"
+      - ".github/workflows/labels-sync.yml"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Preview changes without applying them"
+        type: boolean
+        default: false
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Sync labels from manifest
+        uses: crazy-max/ghaction-github-labeler@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
+          skip-delete: false
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}

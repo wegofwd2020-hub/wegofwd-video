@@ -20,14 +20,14 @@ def test_registry_has_the_known_providers():
 
 def test_veo_is_the_verified_default():
     spec = VIDEO_PROVIDER_REGISTRY["veo"]
-    assert spec.default_model == "veo-3.1"
+    assert spec.default_model == "veo-3.1-lite-generate-preview"
     assert spec.model_verified is True
     assert spec.capabilities.native_audio is True
     assert spec.capabilities.reference_images == 4
 
 
 def test_validate_selection_defaults_model():
-    assert validate_selection("veo") == ("veo", "veo-3.1")
+    assert validate_selection("veo") == ("veo", "veo-3.1-lite-generate-preview")
     assert validate_selection("veo", "veo-3.1-fast") == ("veo", "veo-3.1-fast")
 
 
@@ -37,7 +37,7 @@ def test_validate_selection_unknown_provider():
 
 
 def test_resolve_role():
-    assert resolve_role("narrative-video") == ("veo", "veo-3.1")
+    assert resolve_role("narrative-video") == ("veo", "veo-3.1-lite-generate-preview")
     assert resolve_role("safety-render")[0] == "deterministic-renderer"
 
 

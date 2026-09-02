@@ -84,7 +84,10 @@ def build_demo_brief() -> wv.VideoBrief:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=Path("veo-first-run.mp4"))
-    parser.add_argument("--resolution", default="1080p")
+    # 720p by default: the registry's own note says the Gemini API path is the
+    # fast/720p tier (1080p/4k are the Vertex/Flow route), and a first run should
+    # fail for integration reasons rather than tier ones. --resolution overrides.
+    parser.add_argument("--resolution", default="720p")
     parser.add_argument("--aspect", default="16:9")
     parser.add_argument("--duration", type=float, default=6.0)
     parser.add_argument("--seed", type=int, default=9071)

@@ -48,6 +48,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S", "T20"]
+# A verification script's job is to report to a human on stdout.
+"scripts/**" = ["T20"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["wegofwd_video"]

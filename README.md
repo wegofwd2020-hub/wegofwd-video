@@ -30,7 +30,7 @@ The package:
 
 | id | model | status | notes |
 |----|-------|--------|-------|
-| `veo` | `veo-3.1` | **live call wired** (docs-verified; awaiting first real run) | 1080p/4k, native audio. Submit→poll→download via google-genai. Reach via Gemini API; not the consumer app. Reference-image *ingredients* are a follow-up. |
+| `veo` | `veo-3.1` | **live call wired** (docs-verified; SDK shapes checked against google-genai — see `scripts/first_veo_run.py`; awaiting first real run) | 1080p/4k, native audio. Submit→poll→download via google-genai. Reach via Gemini API; not the consumer app. Reference-image *ingredients* are a follow-up. |
 | `deterministic-renderer` | `blender-grease-pencil-v2` | functional | wraps a **caller-supplied** render fn — kathai's matplotlib/blender stays in kathai; no key, no vendor. |
 | `runway` | `gen-4.5` | **UNVERIFIED** | placeholder |
 | `kling` | `kling-3.0` | **UNVERIFIED** | placeholder |
@@ -65,6 +65,24 @@ kathai's safety path injects its own renderer:
 provider = wv.build_provider("deterministic-renderer", render_fn=my_blender_render)
 result = provider.generate(req)   # child content never leaves this process
 ```
+
+## Verifying a provider
+
+`scripts/first_veo_run.py` exercises the Veo path end to end and reports which
+stage failed rather than a bare traceback — role resolution, the capability
+pre-check, request construction, submit/poll/download, and persistence.
+
+```bash
+python scripts/first_veo_run.py --dry-run           # everything but the API call
+python scripts/first_veo_run.py --out /tmp/veo.mp4  # the real, billable call
+```
+
+`--dry-run` prints the exact `generate_videos` kwargs, so a brief can be
+inspected before anything is spent. The key comes from `GEMINI_API_KEY` or
+`~/.config/wegofwd/gemini.key`, and is never printed or logged.
+
+Veo is reached through the **Gemini API**, not the consumer app; a key without
+that access fails as `VideoAuthError`, which the script calls out separately.
 
 ## Layout
 

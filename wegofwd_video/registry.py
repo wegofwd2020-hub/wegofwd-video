@@ -50,7 +50,11 @@ VIDEO_PROVIDER_REGISTRY: dict[str, VideoProviderSpec] = {
         # app is the fast/720p tier — point production at Vertex/Flow for
         # 1080p/4k + Ingredients + seeds.
         base_url="https://aiplatform.googleapis.com",
-        default_model="veo-3.1",
+        # The served ids carry a "-generate-preview" suffix; plain "veo-3.1" is
+        # a marketing name the API does not accept. Confirmed against
+        # models.list(): veo-3.1-{,fast-,lite-}generate-preview. They are preview
+        # models, so expect these to be retired and renamed.
+        default_model="veo-3.1-lite-generate-preview",
         capabilities=VideoCapabilities(
             max_duration_s=60,
             resolutions=("720p", "1080p", "4k"),
@@ -107,9 +111,13 @@ VIDEO_PROVIDER_REGISTRY: dict[str, VideoProviderSpec] = {
 # Logical role -> (provider_id, model). The seam both apps call. One place to
 # route by cost/safety without touching call sites.
 ROLE_DEFAULTS: dict[str, tuple[str, str]] = {
-    "narrative-video": ("veo", "veo-3.1"),  # pramana lessons; kathai once safety-cleared
+    # lite while the integration is being proven; move to
+    # veo-3.1-generate-preview when output quality is what is being judged.
+    "narrative-video": ("veo", "veo-3.1-lite-generate-preview"),
     "safety-render": ("deterministic-renderer", "blender-grease-pencil-v2"),  # kathai default
-    "fast-preview": ("veo", "veo-3.1"),  # generate cheap, upscale the keeper
+    # generate cheap, upscale the keeper — the role pointed at the same model as
+    # narrative-video, so it was not actually a cheaper path.
+    "fast-preview": ("veo", "veo-3.1-fast-generate-preview"),
 }
 
 

@@ -8,7 +8,7 @@ def test_provenance_shape_for_veo():
         "stage": "video",
         "engine": "wegofwd-video",
         "provider": "veo",
-        "model": "veo-3.1",
+        "model": "veo-3.1-lite-generate-preview",
         "model_verified": True,
         "integration_version": VIDEO_PROVIDER_REGISTRY["veo"].integration_version,
         "contract_version": VIDEO_CONTRACT_VERSION,

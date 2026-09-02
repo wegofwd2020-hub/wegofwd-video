@@ -87,7 +87,7 @@ def test_veo_build_request_shapes_sdk_config():
     payload = p.build_request(
         VideoRequest(brief=_brief(), seed=42, resolution="1080p", target_duration_s=8)
     )
-    assert payload["model"] == "veo-3.1"
+    assert payload["model"] == "veo-3.1-lite-generate-preview"
     cfg = payload["config"]
     assert cfg["seed"] == 42
     assert cfg["generate_audio"] is True
@@ -153,12 +153,12 @@ def test_veo_generate_submits_polls_downloads():
 
     result = p.generate(VideoRequest(brief=_brief_no_ingredients(), seed=7, target_duration_s=8))
 
-    assert result.provider_id == "veo" and result.model == "veo-3.1"
+    assert result.provider_id == "veo" and result.model == "veo-3.1-lite-generate-preview"
     assert result.asset_bytes == b"MP4DATA"
     assert result.asset_uri == "https://veo/out.mp4"
     assert result.has_audio is True and result.c2pa_signed is True and result.watermark == "SynthID"
     assert result.seed == 7 and result.duration_s == 8
-    assert client.models.calls[0]["model"] == "veo-3.1"
+    assert client.models.calls[0]["model"] == "veo-3.1-lite-generate-preview"
 
 
 def test_veo_generate_rejects_ingredients_until_wired():

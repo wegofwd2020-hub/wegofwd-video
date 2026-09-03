@@ -30,13 +30,18 @@ The package:
 
 | id | model | status | notes |
 |----|-------|--------|-------|
-| `veo` | `veo-3.1` | **live call wired** (docs-verified; SDK shapes checked against google-genai — see `scripts/first_veo_run.py`; awaiting first real run) | 1080p/4k, native audio. Submit→poll→download via google-genai. Reach via Gemini API; not the consumer app. Reference-image *ingredients* are a follow-up. |
+| `veo` | `veo-3.1-lite-generate-preview` | **first run done; blocked on quota** — see [`docs/provider-survey-2026-09.md`](docs/provider-survey-2026-09.md) §5 | Submit→poll→download via google-genai. Reach via Gemini API; not the consumer app. **The declared 1080p/4k + native-audio + ingredients capabilities are true on Vertex and false on the Developer API the provider actually calls** — that split is the open decision. |
 | `deterministic-renderer` | `blender-grease-pencil-v2` | functional | wraps a **caller-supplied** render fn — kathai's matplotlib/blender stays in kathai; no key, no vendor. |
 | `runway` | `gen-4.5` | **UNVERIFIED** | placeholder |
 | `kling` | `kling-3.0` | **UNVERIFIED** | placeholder |
 
 Logical roles decouple call sites from model ids: `narrative-video` → veo,
 `safety-render` → deterministic-renderer, `fast-preview` → veo.
+
+> **Choosing a provider:** [`docs/provider-survey-2026-09.md`](docs/provider-survey-2026-09.md)
+> — twelve engines compared on per-second rate, blind-vote quality, which config
+> fields each API surface actually honours, and indemnity/provenance terms.
+> Dated, and marks each figure's source confidence; video pricing moves monthly.
 
 ## Usage
 
@@ -103,10 +108,15 @@ tests/                # the conformance gate — travels with the code
 `v1.0.0` — **interface frozen** (additive-by-default; breaking changes bump major
 + `VIDEO_CONTRACT_VERSION`). The ADR-026 D7 gate is met: both real consumers are
 merged on two provider paths — pramana (`veo`) and kathai-chithiram
-(`deterministic-renderer`). The Veo live call is wired (submit→poll→download); a
-first real generation is still pending, so `veo` `model_verified` stays
-docs-verified until then — a provider-integration detail that does **not** affect
-the frozen contract (ADR-026).
+(`deterministic-renderer`). The Veo live call is wired (submit→poll→download) and
+**the first real run happened on 2026-09-02**: it corrected the model id
+(`veo-3.1` was a marketing name) and then stopped at `429 RESOURCE_EXHAUSTED` —
+Veo is paid and the project has no quota. `model_verified` is now `True` for the
+id, but the *path* is unresolved: the registry's `base_url` is Vertex while the
+provider builds a Developer-API client, and `seed`, `generate_audio`,
+`reference_images` and `duration_seconds` are all rejected on that path. A
+provider-integration detail that does **not** affect the frozen contract
+(ADR-026); see [`docs/provider-survey-2026-09.md`](docs/provider-survey-2026-09.md) §8.
 
 ## Dev
 

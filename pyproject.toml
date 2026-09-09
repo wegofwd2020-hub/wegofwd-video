@@ -23,6 +23,21 @@ dependencies = []
 
 [project.optional-dependencies]
 veo = ["google-genai>=0.3"]
+# Self-hosted diffusion (providers/local_diffusion.py). torch is listed without a
+# CUDA suffix on purpose: on a CPU-only host install it FIRST from the CPU index
+# (`pip install torch --index-url https://download.pytorch.org/whl/cpu`) so this
+# extra resolves against the small wheel instead of pulling 3 GB of CUDA libs.
+local = [
+    "torch>=2.4",
+    # floors are where `dtype=` replaced `torch_dtype=` in from_pretrained; verified
+    # against diffusers 0.40 / transformers 5.16 with a tiny random-weight pipeline.
+    "diffusers>=0.36",
+    "transformers>=4.56",
+    "accelerate>=1.0",
+    "sentencepiece>=0.2",
+    "safetensors>=0.4",
+    "imageio[ffmpeg]>=2.35",
+]
 dev = [
     "pytest>=8",
     "ruff>=0.5",
@@ -50,6 +65,8 @@ ignore = [
 "tests/**" = ["S", "T20"]
 # A verification script's job is to report to a human on stdout.
 "scripts/**" = ["T20"]
+# Loading a checkpoint by URL is the documented diffusers idiom, not a bandit hit.
+"wegofwd_video/providers/local_diffusion.py" = ["S310"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["wegofwd_video"]
@@ -62,3 +79,6 @@ line-ending = "lf"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    "integration: needs the [local] extra (torch/diffusers); auto-skipped without it",
+]

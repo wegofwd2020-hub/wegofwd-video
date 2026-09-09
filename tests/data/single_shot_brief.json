@@ -1,0 +1,8 @@
+{
+  "$schema": "../../schema/video_brief.v1.json",
+  "global_style": "warm storybook illustration",
+  "global_negative": "no flashing",
+  "shots": [
+    { "scene_index": 0, "prompt": "child waves at the camera", "duration_s": 1.0 }
+  ]
+}

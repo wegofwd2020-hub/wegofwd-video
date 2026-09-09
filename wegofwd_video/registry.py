@@ -83,6 +83,26 @@ VIDEO_PROVIDER_REGISTRY: dict[str, VideoProviderSpec] = {
         ),
         model_verified=True,
     ),
+    # Self-hosted open weights (LTX-Video 2B distilled via diffusers). No vendor,
+    # no key, nothing leaves the machine. CPU-first: the resolutions start at 256p
+    # because the first consumer host is a 4-core/32 GB box, and the model stays
+    # UNVERIFIED until scripts/first_local_run.py has produced a clip there.
+    "local-diffusion": VideoProviderSpec(
+        provider_id="local-diffusion",
+        base_url=None,
+        # diffusers-layout repo (VAE/scheduler/T5/config); the 2B *distilled*
+        # transformer is swapped in from Lightricks/LTX-Video by the provider.
+        default_model="Lightricks/LTX-Video-0.9.5",
+        capabilities=VideoCapabilities(
+            max_duration_s=10,
+            resolutions=("256p", "320p", "480p", "720p"),
+            aspect_ratios=("16:9", "9:16", "1:1"),
+            native_audio=False,
+            reference_images=0,
+            deterministic=True,  # same seed + same torch build reproduces the frames
+        ),
+        model_verified=False,
+    ),
     "runway": VideoProviderSpec(
         provider_id="runway",
         base_url="https://api.dev.runwayml.com",  # UNVERIFIED
@@ -118,6 +138,8 @@ ROLE_DEFAULTS: dict[str, tuple[str, str]] = {
     # generate cheap, upscale the keeper — the role pointed at the same model as
     # narrative-video, so it was not actually a cheaper path.
     "fast-preview": ("veo", "veo-3.1-fast-generate-preview"),
+    # zero-cost, on-box proof-of-concept path (slow on CPU; same brief, same seam).
+    "local-preview": ("local-diffusion", "Lightricks/LTX-Video-0.9.5"),
 }
 
 
@@ -208,6 +230,10 @@ def build_provider(
     - veo / runway / kling: require `api_key` (BYOK).
     - deterministic-renderer: requires `render_fn` (the caller's local renderer);
       no key — child content never leaves the process (ADR-026 D1/D4).
+    - local-diffusion: no key; `vendor_opts` are LocalDiffusionProvider options
+      (steps, guidance, timeout, on_progress, engine, transformer_file, device,
+      dtype, text_encoder_dtype, threads, cache_dir). Needs the `local` extra
+      unless an `engine` is injected.
     """
     provider_id, chosen_model = validate_selection(provider_id, model, allowed=allowed)
     spec = VIDEO_PROVIDER_REGISTRY[provider_id]
@@ -221,6 +247,19 @@ def build_provider(
 
         return CallableRenderProvider(
             render_fn=render_fn, model=chosen_model, capabilities=spec.capabilities
+        )
+
+    if provider_id == "local-diffusion":
+        from wegofwd_video.providers.local_diffusion import LocalDiffusionProvider
+
+        if api_key:
+            raise VideoConfigurationError(
+                "local-diffusion takes no api_key — it runs on this machine with open weights"
+            )
+        return LocalDiffusionProvider(
+            model=chosen_model,
+            capabilities=spec.capabilities,
+            **vendor_opts,  # type: ignore[arg-type]
         )
 
     if provider_id == "veo":

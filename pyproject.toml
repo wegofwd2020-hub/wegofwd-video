@@ -35,6 +35,12 @@ local = [
     "transformers>=4.56",
     "accelerate>=1.0",
     "sentencepiece>=0.2",
+    # T5's tokenizer ships only spiece.model. transformers converts it to the
+    # fast format with SentencePieceExtractor, which imports protobuf; without
+    # it the conversion falls back to a tiktoken reader and dies one layer down.
+    # The tiny-model integration test builds a fast tokenizer directly, so it
+    # cannot catch this — only a real weight download does.
+    "protobuf>=4",
     "safetensors>=0.4",
     "imageio[ffmpeg]>=2.35",
 ]

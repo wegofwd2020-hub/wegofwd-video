@@ -23,10 +23,13 @@
       2026-09-09 on diffusers 0.40 / transformers 5.16: `text_encoder=None` load,
       prompt-embeds input, per-step callback, H.264 export, seed determinism,
       transformer-swap fallback
-- [ ] 3.5 **On the host:** `python scripts/first_local_run.py --smoke` produces a
+- [x] 3.5 **On the host:** `python scripts/first_local_run.py --smoke` produces a
       clip with the real weights; record numbers in `docs/local-diffusion-cpu-poc.md`
-- [ ] 3.6 Flip `model_verified=True`; bump `integration_version` if the pipeline
-      call had to change
+      — done 2026-09-09 on mambakkam: 15.1 min wall clock, 19.7 s/step, peak RSS
+      23.9 GB, coherent 448×256 clip, distilled transformer loaded with no fallback
+- [x] 3.6 Flip `model_verified=True`; bump `integration_version` if the pipeline
+      call had to change — flipped; `integration_version` left at 1 because the
+      pipeline call did not change (only `protobuf` was added to the `local` extra)
 
 ## 4. Docs
 - [x] 4.1 `docs/local-diffusion-cpu-poc.md` (host setup, run matrix, log)

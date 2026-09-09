@@ -85,8 +85,9 @@ VIDEO_PROVIDER_REGISTRY: dict[str, VideoProviderSpec] = {
     ),
     # Self-hosted open weights (LTX-Video 2B distilled via diffusers). No vendor,
     # no key, nothing leaves the machine. CPU-first: the resolutions start at 256p
-    # because the first consumer host is a 4-core/32 GB box, and the model stays
-    # UNVERIFIED until scripts/first_local_run.py has produced a clip there.
+    # because the first consumer host is a 4-core/32 GB box. VERIFIED there on
+    # 2026-09-09: scripts/first_local_run.py --smoke rendered a coherent 448x256
+    # clip in 15.1 min wall clock at 19.7 s/step (4 steps), peak RSS 23.9 GB.
     "local-diffusion": VideoProviderSpec(
         provider_id="local-diffusion",
         base_url=None,
@@ -101,7 +102,10 @@ VIDEO_PROVIDER_REGISTRY: dict[str, VideoProviderSpec] = {
             reference_images=0,
             deterministic=True,  # same seed + same torch build reproduces the frames
         ),
-        model_verified=False,
+        # First real clip rendered 2026-09-09 on mambakkam with the distilled
+        # transformer actually loaded (no fallback). The pipeline call did not have
+        # to change, so integration_version stays where it was.
+        model_verified=True,
     ),
     "runway": VideoProviderSpec(
         provider_id="runway",

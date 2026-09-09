@@ -113,6 +113,6 @@ def test_full_run_with_fake_engine_persists_and_reports(
     assert data["seconds_per_step"] == 1.5
     assert data["result"]["seed"] == 5
     assert data["provenance"]["provider"] == "local-diffusion"
-    assert data["provenance"]["model_verified"] is False
+    assert data["provenance"]["model_verified"] is True
     printed = capsys.readouterr().out
     assert "s/step" in printed and "stored" in printed

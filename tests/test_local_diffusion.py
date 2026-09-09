@@ -150,7 +150,7 @@ def test_total_duration_prefers_request_then_shots(sox_brief, single_brief):
 def test_registered_with_honest_capabilities():
     spec = wv.VIDEO_PROVIDER_REGISTRY["local-diffusion"]
     assert spec.base_url is None and spec.managed_env_key == ""
-    assert spec.model_verified is False  # flips after the first real clip
+    assert spec.model_verified is True  # flipped 2026-09-09 by the first real clip
     assert spec.capabilities.native_audio is False
     assert spec.capabilities.reference_images == 0
     assert spec.capabilities.deterministic is True
@@ -306,10 +306,13 @@ def test_generate_maps_backend_errors(single_brief, exc, expected, hint):
 
 
 def test_provenance_is_honest_about_verification():
+    # This provider has now rendered a real clip on real weights, so provenance
+    # must say so. The assertion is kept pinned to the exact value rather than
+    # loosened, because the point of the field is that it cannot drift silently.
     prov = wv.provenance("local-diffusion", seed=3)
     assert prov["provider"] == "local-diffusion"
     assert prov["model"] == "Lightricks/LTX-Video-0.9.5"
-    assert prov["model_verified"] is False
+    assert prov["model_verified"] is True
     assert prov["seed"] == 3
 
 

@@ -32,11 +32,13 @@ The package:
 |----|-------|--------|-------|
 | `veo` | `veo-3.1-lite-generate-preview` | **first run done; blocked on quota** — see [`docs/provider-survey-2026-09.md`](docs/provider-survey-2026-09.md) §5 | Submit→poll→download via google-genai. Reach via Gemini API; not the consumer app. **The declared 1080p/4k + native-audio + ingredients capabilities are true on Vertex and false on the Developer API the provider actually calls** — that split is the open decision. |
 | `deterministic-renderer` | `blender-grease-pencil-v2` | functional | wraps a **caller-supplied** render fn — kathai's matplotlib/blender stays in kathai; no key, no vendor. |
+| `local-diffusion` | `Lightricks/LTX-Video-0.9.5` + 2B distilled checkpoint | **wired; awaiting first real run** — see [`docs/local-diffusion-cpu-poc.md`](docs/local-diffusion-cpu-poc.md) | self-hosted open weights via `diffusers`, CPU-first; no key, nothing leaves the machine. 256p–720p, ≤10 s, no audio, no ingredients. `pip install wegofwd-video[local]`. |
 | `runway` | `gen-4.5` | **UNVERIFIED** | placeholder |
 | `kling` | `kling-3.0` | **UNVERIFIED** | placeholder |
 
 Logical roles decouple call sites from model ids: `narrative-video` → veo,
-`safety-render` → deterministic-renderer, `fast-preview` → veo.
+`safety-render` → deterministic-renderer, `fast-preview` → veo,
+`local-preview` → local-diffusion.
 
 > **Choosing a provider:** [`docs/provider-survey-2026-09.md`](docs/provider-survey-2026-09.md)
 > — twelve engines compared on per-second rate, blind-vote quality, which config
@@ -71,6 +73,14 @@ provider = wv.build_provider("deterministic-renderer", render_fn=my_blender_rend
 result = provider.generate(req)   # child content never leaves this process
 ```
 
+The zero-cost local path takes no key and reports its own timing:
+
+```python
+provider = wv.build_provider("local-diffusion", steps=8, on_progress=print)
+result = provider.generate(wv.VideoRequest(brief=my_brief, resolution="320p", seed=9071))
+result.raw["seconds_per_step"]   # the number a CPU proof-of-concept exists to measure
+```
+
 ## Verifying a provider
 
 `scripts/first_veo_run.py` exercises the Veo path end to end and reports which
@@ -81,6 +91,12 @@ pre-check, request construction, submit/poll/download, and persistence.
 python scripts/first_veo_run.py --dry-run           # everything but the API call
 python scripts/first_veo_run.py --out /tmp/veo.mp4  # the real, billable call
 ```
+
+`scripts/first_local_run.py` does the same for the local path — `--dry-run`
+plans without loading torch, `--smoke` renders the smallest possible clip, and
+every real run prints seconds-per-step, wall clock and peak RSS (`--json` keeps
+them). The runbook and measurement log are in
+[`docs/local-diffusion-cpu-poc.md`](docs/local-diffusion-cpu-poc.md).
 
 `--dry-run` prints the exact `generate_videos` kwargs, so a brief can be
 inspected before anything is spent. The key comes from `GEMINI_API_KEY` or
@@ -99,6 +115,8 @@ wegofwd_video/
   providers/
     veo.py            # Veo 3.1 — request shaping done; live call stubbed (ADR-026 D7)
     local_render.py   # CallableRenderProvider (caller-supplied renderer)
+    local_diffusion.py # LocalDiffusionProvider — LTX-Video via diffusers, CPU-first
+openspec/             # project context + change proposals/specs (OpenSpec)
 schema/video_brief.v1.json
 tests/                # the conformance gate — travels with the code
 ```
@@ -125,3 +143,7 @@ pip install -e ".[dev,veo]"
 pytest        # the test suite is the conformance gate
 ruff check .
 ```
+
+For the self-hosted path on a CPU box, install torch from the CPU index first
+(`pip install torch --index-url https://download.pytorch.org/whl/cpu`) and then
+`pip install -e ".[dev,local]"` — the runbook explains why.

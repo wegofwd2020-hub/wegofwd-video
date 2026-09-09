@@ -1,0 +1,27 @@
+{
+  "$schema": "../../schema/video_brief.v1.json",
+  "global_style": "clean corporate explainer, soft neutral lighting, muted palette, no on-screen text",
+  "global_negative": "text overlays, logos, watermarks, distorted faces",
+  "audio_direction": "calm professional narrator, measured pace",
+  "shots": [
+    {
+      "scene_index": 0,
+      "prompt": "A person at a desk in a modern office reviews a printed control checklist, then looks up thoughtfully",
+      "shot_type": "medium",
+      "camera_move": "slow push-in",
+      "lighting": "soft daylight from a window",
+      "dialogue": "Every completion is recorded as evidence.",
+      "duration_s": 2.0
+    },
+    {
+      "scene_index": 1,
+      "prompt": "The same person stamps the checklist and files it into a labelled binder",
+      "shot_type": "close-up",
+      "camera_move": "static",
+      "lighting": "soft daylight from a window",
+      "dialogue": "The record is what the auditor will see.",
+      "duration_s": 2.0,
+      "negative": "blurry hands"
+    }
+  ]
+}

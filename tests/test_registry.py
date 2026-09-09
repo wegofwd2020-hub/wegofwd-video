@@ -13,6 +13,7 @@ def test_registry_has_the_known_providers():
     assert set(available_providers()) == {
         "veo",
         "deterministic-renderer",
+        "local-diffusion",
         "runway",
         "kling",
     }

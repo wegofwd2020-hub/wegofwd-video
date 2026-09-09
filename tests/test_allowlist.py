@@ -3,7 +3,7 @@ import pytest
 from wegofwd_video.errors import VideoNotAllowedError
 from wegofwd_video.registry import available_providers, build_provider, validate_selection
 
-ALL = {"veo", "deterministic-renderer", "runway", "kling"}
+ALL = {"veo", "deterministic-renderer", "local-diffusion", "runway", "kling"}
 
 
 def test_available_providers_no_restriction():

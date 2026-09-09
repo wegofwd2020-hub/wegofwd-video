@@ -1,0 +1,6 @@
+{
+  "$schema": "../../schema/video_brief.v1.json",
+  "global_style": "warm storybook",
+  "ingredients": [ { "role": "character:child", "ref": "child.png", "description": "child ~6yo" } ],
+  "shots": [ { "scene_index": 0, "prompt": "child walks to the sink", "duration_s": 2.0 } ]
+}

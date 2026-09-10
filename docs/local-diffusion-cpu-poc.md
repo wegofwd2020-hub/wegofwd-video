@@ -37,10 +37,51 @@ pip install -e ".[dev,local]"
 pytest            # unit suite needs no weights; the [local] integration test builds a tiny model
 ```
 
-If `import torch` dies with *Illegal instruction* on this CPU, the wheel was
-built assuming AVX2; pin an older CPU wheel (`torch==2.3.1`) and note it below.
-**It does not.** `torch 2.14.0+cpu` imports and runs fine on this Ivy Bridge
-(AVX-only) host — 4 threads, `cuda.is_available() False`. No pin needed.
+### *Illegal instruction* on this CPU — what is actually known
+
+`import torch` does **not** die here: `torch 2.14.0+cpu` imports and runs on
+this Ivy Bridge host — 4 threads, `cuda.is_available() False`. So the old advice
+in this section ("pin `torch==2.3.1`") was never triggered by an import, and no
+torch pin is needed to get started.
+
+But SIGILL does occur, intermittently, **during work rather than at import**:
+
+- Observed **once in five** runs of this repo's own test suite, with a core dump
+  (`coredumpctl`, signal 4/ILL) whose stack sits in
+  `torch/lib/libtorch_cpu.so`, called from a `libgomp` (OpenMP) worker thread.
+- Also observed once, reproducibly at the time, partway through T5 encoding in a
+  real render — *after* all 219 weight shards had loaded, roughly six minutes
+  in, so it presented as a model or memory problem rather than a CPU one.
+
+The host is an i5-3570K: **AVX yes, AVX2 no, FMA no.** `torch.backends.cpu
+.get_cpu_capability()` already reports `DEFAULT`, so torch's own runtime dispatch
+believes it is on the safe path — and something in `libtorch_cpu` executes an
+unsupported instruction anyway. That points at torch's CPU kernels, not at the
+libraries above them.
+
+**What is NOT established.** An earlier revision of this runbook claimed
+`transformers 5.17.0` was the cause and `5.16.1` the fix, on the strength of a
+diff between two virtualenvs where one rendered and one crashed. That was one
+sample of each, and `5.16.1` has since produced a SIGILL of its own in the suite
+above. **Treat the transformers correlation as unproven.** It may have changed
+which kernels get dispatched; it is not demonstrated to be the cause.
+
+**How to tell a SIGILL from an out-of-memory kill**, which look identical in a
+log because a detached process has no shell to print "Illegal instruction":
+
+```bash
+coredumpctl list --since "1 hour ago"
+```
+
+A genuine illegal instruction leaves a core dump. A process killed for memory
+does not. This distinction cost several hours of misdiagnosis; do it first.
+
+**If it bites you**, in increasing order of disruption: re-run (it is
+intermittent); reduce `--threads`, since the observed crash was on an OpenMP
+worker; or pin an older CPU wheel (`torch==2.3.1` is the usual suggestion for
+pre-AVX2 hosts). None of these is verified here — the intermittency makes
+"it worked this time" weak evidence, so record what you actually observe in §4
+rather than trusting this list.
 
 **`protobuf` is required and the extra used to omit it.** T5's tokenizer ships
 only `spiece.model`; `transformers` converts it to the fast format with
